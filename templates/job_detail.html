@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load leads_tags %}
+{% block robots %}noindex,nofollow{% endblock %}
 {% block title %}{{ job.source_filename }} | ProveMails{% endblock %}
 {% block meta_description %}Verification status and results for a ProveMails lead batch.{% endblock %}
 {% block content %}

@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "local-development-only-change-before-deploy")
-DEBUG = os.getenv("DJANGO_DEBUG", "True").strip().lower() in {"1", "true", "yes", "on"}
+DEBUG = os.getenv("DJANGO_DEBUG", "False").strip().lower() in {"1", "true", "yes", "on"}
 if not DEBUG and SECRET_KEY == "local-development-only-change-before-deploy":
     raise ImproperlyConfigured("Set DJANGO_SECRET_KEY to a strong, private value before production deployment.")
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()]
@@ -57,9 +57,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 default_database = f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
+# Resolve empty environment values before parsing so local/CI use SQLite by default.
+database_url = os.getenv("DATABASE_URL", "").strip() or default_database
 DATABASES = {
-    "default": dj_database_url.config(
-        default=os.getenv("DATABASE_URL") or default_database,
+    "default": dj_database_url.parse(
+        database_url,
         conn_max_age=600,
         ssl_require=os.getenv("DATABASE_SSL_REQUIRE", "False").lower() in {"1", "true", "yes", "on"},
     )
@@ -99,7 +101,7 @@ MAX_LEAD_FILE_BYTES = 50 * 1024 * 1024
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = "noreply@provemails.local"
 
-SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() in {"1", "true", "yes", "on"}
+SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True" if not DEBUG else "False").strip().lower() in {"1", "true", "yes", "on"}
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 X_FRAME_OPTIONS = "DENY"

@@ -82,7 +82,7 @@ class EmailJob(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["owner", "-created_at"]), models.Index(fields=["status", "created_at"])]
+        indexes = [models.Index(fields=["owner", "-created_at"], name="leads_job_owner_created"), models.Index(fields=["status", "created_at"], name="leads_job_status_created")]
 
     @property
     def progress_percent(self):
@@ -113,7 +113,7 @@ class VerificationRow(models.Model):
     class Meta:
         ordering = ["position"]
         constraints = [models.UniqueConstraint(fields=["job", "position"], name="unique_job_result_position")]
-        indexes = [models.Index(fields=["job", "status"])]
+        indexes = [models.Index(fields=["job", "status"], name="leads_result_job_status")]
 
     def __str__(self):
         return f"{self.verified_email} · {self.status}"

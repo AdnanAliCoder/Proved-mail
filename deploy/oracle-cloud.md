@@ -48,22 +48,31 @@ After successful setup, remove PROVEDMAILS_ADMIN_SIGNUP_KEY from the production 
 
 The web process serves Django pages and queues uploads. A separate single worker process does the heavy verification. This separation lets the web app continue to respond while long batches are running.
 
-For a quick foreground smoke test:
+For a quick foreground smoke test, use two terminals:
 
-    gunicorn config.wsgi:application --bind 127.0.0.1:8000 --workers 2 --threads 4
+    gunicorn config.wsgi:application --bind 127.0.0.1:8000 --workers 2 --threads 4 --timeout 120
+
     python manage.py process_jobs --poll-seconds 2
 
-Configure the commands as separate systemd services for production. Run only one queue worker unless you add database locking/claiming for multiple workers. Use Nginx as a reverse proxy, configure HTTPS, and proxy to Gunicorn on localhost port 8000.
+For persistent services, example units are included in `deploy/systemd/`. Change the repository path, Linux user/group and Python paths if yours differ:
 
-Example web service command:
+    sudo cp deploy/systemd/provemails-web.service /etc/systemd/system/
+    sudo cp deploy/systemd/provemails-worker.service /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now provemails-web
+    sudo systemctl enable --now provemails-worker
 
-    /home/ubuntu/Proved-mail/.venv/bin/gunicorn config.wsgi:application --bind 127.0.0.1:8000 --workers 2 --threads 4 --timeout 120
+Check status and logs:
 
-Example worker command:
+    sudo systemctl status provemails-web provemails-worker
+    sudo journalctl -u provemails-web -n 100 --no-pager
+    sudo journalctl -u provemails-worker -n 100 --no-pager
 
-    /home/ubuntu/Proved-mail/.venv/bin/python /home/ubuntu/Proved-mail/manage.py process_jobs --poll-seconds 2
+Use one queue worker in this starter version. Do not run duplicate workers; job claiming has not been implemented for multiple competing workers.
 
-Use your actual deployment path in service files, then enable them with systemctl. Add Nginx rules so /static/ is served from STATIC_ROOT and /media/ from MEDIA_ROOT, with access restricted as appropriate. Protect media/uploads from public directory listing.
+A sample Nginx reverse-proxy config is included at `deploy/nginx-provemails.conf`. Replace the example hostname and certificate paths. Configure the actual HTTPS certificate before enabling the TLS server block. The proxy should forward `X-Forwarded-Proto` and pass requests to Gunicorn on localhost port 8000. Serve only `/static/` directly from STATIC_ROOT; do not expose `/media/` as a public Nginx alias because it stores original lead files.
+
+For production .env values, set `DJANGO_DEBUG=False`, `SITE_URL=https://your-domain.example`, `ALLOWED_HOSTS=your-domain.example,www.your-domain.example`, `CSRF_TRUSTED_ORIGINS=https://your-domain.example,https://www.your-domain.example`, and `SECURE_SSL_REDIRECT=True` once HTTPS forwarding is configured. Keep the PostgreSQL connection string and all secrets private.
 
 ## 6. Important SMTP limitation
 

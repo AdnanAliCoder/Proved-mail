@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Admin panel | ProveMails{% endblock %}
+{% block content %}
+<section class="workspace-shell admin-shell">
+  <div class="workspace-heading"><div><div class="eyebrow"><span class="eyebrow-dot"></span> OWNER CONTROLS</div><h1>Admin <span>console.</span></h1><p>Manage your website identity, SEO, verification files, and public content.</p></div><span class="admin-avatar">AA</span></div>
+  <div class="metric-grid admin-metrics">
+    <article class="metric-card"><span class="metric-label">ALL JOBS</span><strong>{{ stats.jobs }}</strong><small>Verification history</small><span class="metric-icon blue">▤</span></article>
+    <article class="metric-card"><span class="metric-label">IN QUEUE</span><strong>{{ stats.active }}</strong><small>Queued or running</small><span class="metric-icon amber">◷</span></article>
+    <article class="metric-card"><span class="metric-label">COMPLETED BATCHES</span><strong>{{ stats.completed }}</strong><small>Ready to download</small><span class="metric-icon mint">✓</span></article>
+    <article class="metric-card"><span class="metric-label">TOTAL LEADS</span><strong>{{ stats.leads }}</strong><small>Rows across all jobs</small><span class="metric-icon violet">⌁</span></article>
+  </div>
+  <div class="control-grid">
+    <a href="{% url 'control_settings' %}" class="control-card"><span class="control-icon icon-blue">⚙</span><div><h2>Site & SEO settings</h2><p>Website title, description, AdSense, Analytics and Google Search Console verification.</p><span class="text-link">Manage settings →</span></div><span class="control-arrow">↗</span></a>
+    <a href="{% url 'control_pages' %}" class="control-card"><span class="control-icon icon-violet">▤</span><div><h2>Public pages</h2><p>Edit About, Privacy Policy, Terms of Use, Contact and each page's SEO metadata.</p><span class="text-link">Edit pages →</span></div><span class="control-arrow">↗</span></a>
+    <a href="{% url 'dashboard' %}" class="control-card"><span class="control-icon icon-mint">✉</span><div><h2>Verification workspace</h2><p>Upload a new list, review past batches, monitor processing and export results.</p><span class="text-link">Open workspace →</span></div><span class="control-arrow">↗</span></a>
+    <div class="control-card control-card-static"><span class="control-icon icon-amber">♢</span><div><h2>Administrator access</h2><p>The initial administrator is the only account. Public registrations close after first setup.</p><span class="small-note">Signed in as {{ request.user.email }}</span></div></div>
+  </div>
+  <section class="panel history-panel">
+    <div class="panel-heading history-heading"><div><span class="panel-kicker">SYSTEM ACTIVITY</span><h2>Latest verification jobs</h2><p>Recent jobs across the administrator workspace.</p></div><span class="count-pill">{{ stats.pages }} editable pages</span></div>
+    {% if latest_jobs %}<div class="table-scroll"><table class="data-table"><thead><tr><th>File</th><th>Owner</th><th>Status</th><th>Rows</th><th>Created</th></tr></thead><tbody>{% for job in latest_jobs %}<tr><td>{{ job.source_filename }}</td><td>{{ job.owner.email }}</td><td><span class="status-pill status-{{ job.status }}">{{ job.get_status_display }}</span></td><td>{{ job.total }}</td><td>{{ job.created_at|date:"M j, Y H:i" }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty-state"><p>No jobs have been submitted yet.</p></div>{% endif %}
+  </section>
+</section>
+{% endblock %}

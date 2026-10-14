@@ -1,0 +1,16 @@
+# Secrets and local environment
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+db.sqlite3
+.DS_Store
+
+# Runtime uploads / generated data
+media/
+staticfiles/
+*.log
+.coverage
+.pytest_cache/

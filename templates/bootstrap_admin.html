@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}One-time administrator setup | ProveMails{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block content %}
+<section class="auth-layout auth-layout-single">
+  <div class="auth-story"><div class="eyebrow"><span class="eyebrow-dot"></span> FIRST-RUN SETUP</div><h1>Create the<br><span>administrator account.</span></h1><p>This one-time setup is restricted to the administrator email and setup key configured in your server environment. Once an administrator exists, this page is permanently closed.</p><div class="security-note"><strong>Security first</strong><span>Your password is saved as a Django password hash. It is never stored as plain text.</span></div></div>
+  <div class="auth-card"><div class="auth-card-head"><div class="auth-card-icon">✦</div><div><h2>Admin setup</h2><p>One account only</p></div></div>
+    {% if setup_unavailable %}<div class="notice notice-warning"><strong>Setup is not configured yet.</strong><p>Set PROVEDMAILS_ADMIN_EMAIL and PROVEDMAILS_ADMIN_SIGNUP_KEY in your local .env or server environment, then restart Django.</p></div><a class="button button-primary button-full" href="{% url 'login' %}">Go to login</a>
+    {% else %}
+      {% if configured_email %}<div class="notice notice-neutral">Authorized email: <strong>{{ configured_email }}</strong></div>{% endif %}
+      <form method="post" class="form-stack">{% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% if field.errors %}<div class="field-error">{{ field.errors|striptags }}</div>{% endif %}</div>{% endfor %}
+        <button class="button button-primary button-full" type="submit">Create admin account <span>→</span></button>
+      </form>
+    {% endif %}
+    <a class="back-link" href="{% url 'home' %}">← Back to home</a>
+  </div>
+</section>
+{% endblock %}

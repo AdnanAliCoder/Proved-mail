@@ -2,6 +2,8 @@
 {% block title %}{{ page.seo_title|default:page.title }}{% endblock %}
 {% block meta_description %}{{ page.meta_description|default:site_settings.meta_description }}{% endblock %}
 {% block og_title %}{{ page.seo_title|default:page.title }}{% endblock %}
+{% block og_description %}{{ page.meta_description|default:site_settings.meta_description }}{% endblock %}
+{% block og_url %}{{ site_url }}{% url 'public_page' page.slug %}{% endblock %}
 {% block canonical %}{{ site_url }}{% url 'public_page' page.slug %}{% endblock %}
 {% block content %}
 <section class="content-page-shell">

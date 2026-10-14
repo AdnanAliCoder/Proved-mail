@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ page.title }} | ProveMails{% endblock %}
+{% block content %}
+<section class="workspace-shell admin-shell">
+  <a class="back-link" href="{% url 'control_pages' %}">← Back to public pages</a>
+  <div class="workspace-heading"><div><div class="eyebrow">CONTENT MANAGEMENT</div><h1>Edit <span>{{ page.title }}.</span></h1><p>Manage this page's copy, visibility and SEO description.</p></div></div>
+  <section class="panel page-form-panel"><form method="post" class="form-stack settings-form">{% csrf_token %}
+    {% for field in form %}<div class="field {% if field.name == 'body_text' %}field-code{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% if field.errors %}<div class="field-error">{{ field.errors|striptags }}</div>{% endif %}</div>{% endfor %}
+    <div class="form-actions"><button class="button button-primary" type="submit">Save page <span>✓</span></button><a class="button button-secondary" href="{% url 'control_pages' %}">Cancel</a></div>
+  </form></section>
+</section>
+{% endblock %}

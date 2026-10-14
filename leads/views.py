@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.forms import AuthenticationForm
-from django.http import HttpResponse, HttpResponseForbidden, JsonResponse, HttpResponseNotAllowed
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -37,7 +37,12 @@ def admin_required(view_func):
     return wrapper
 
 def _site_settings():
-    return SiteSettings.objects.get_or_create(pk=1)[0]
+    obj = SiteSettings.objects.get_or_create(pk=1, defaults={"site_url": settings.SITE_URL})[0]
+    local_default = "http://127.0.0.1:8000"
+    if obj.site_url == local_default and settings.SITE_URL != local_default:
+        obj.site_url = settings.SITE_URL
+        obj.save(update_fields=["site_url", "updated_at"])
+    return obj
 
 def _ensure_starter_pages():
     for slug, title, description in STARTER_PAGES:
@@ -203,6 +208,7 @@ def cancel_job(request, job_id):
 
 @admin_required
 def download_results(request, job_id):
+    from itertools import chain
     job = get_object_or_404(EmailJob, pk=job_id, owner=request.user)
     if job.status not in {EmailJob.Status.COMPLETED, EmailJob.Status.CANCELED, EmailJob.Status.FAILED}:
         return HttpResponse("The job is still running.", status=409)
@@ -210,49 +216,65 @@ def download_results(request, job_id):
     allowed = {"all", "valid", "invalid", "risky", "unknown", "non_role"}
     if filter_type not in allowed:
         return HttpResponse("Unsupported result filter.", status=400)
-    query = job.results.all()
+    query = job.results.all().order_by("position")
     if filter_type in {"valid", "invalid", "risky", "unknown"}:
         query = query.filter(status=filter_type)
-    elif filter_type == "non_role":
-        # detail is a JSON object; export filtering occurs below for portability across PostgreSQL/SQLite.
-        pass
-    rows = list(query.order_by("position").iterator(chunk_size=1000))
-    if filter_type == "non_role":
-        rows = [row for row in rows if not row.detail.get("is_role", False)]
-    if not rows:
+    iterator = iter(query.iterator(chunk_size=1000))
+    first = None
+    for candidate in iterator:
+        if filter_type == "non_role" and candidate.detail.get("is_role", False):
+            continue
+        first = candidate
+        break
+    if first is None:
         return HttpResponse("No result rows match this filter yet.", status=404)
-    source_fields = list(rows[0].source_row.keys())
+
+    source_fields = list(first.source_row.keys())
     result_fields = ["verified_email", "status", "reason", "confidence", "is_role", "is_disposable",
                      "is_free", "is_catch_all", "did_you_mean", "mx_host", "provider", "smtp_message",
                      "has_spf", "has_dmarc", "has_gravatar", "reliable"]
     fieldnames = list(dict.fromkeys(source_fields + result_fields))
     base_name = slugify(Path(job.source_filename).stem) or "leads"
+
+    def merged_row(row):
+        merged = dict(row.source_row)
+        merged.update({"verified_email": row.verified_email, "status": row.status, "reason": row.reason,
+                       "confidence": row.confidence, **row.detail})
+        return merged
+
     if request.GET.get("format", "csv").lower() == "xlsx":
         from openpyxl import Workbook
-        from openpyxl.utils import get_column_letter
         book = Workbook(write_only=True)
         sheet = book.create_sheet("Verified leads")
         sheet.append(fieldnames)
-        for row in rows:
-            merged = dict(row.source_row)
-            merged.update({"verified_email": row.verified_email, "status": row.status, "reason": row.reason,
-                           "confidence": row.confidence, **row.detail})
-            sheet.append([merged.get(name, "") for name in fieldnames])
+        for row in chain([first], iterator):
+            if filter_type == "non_role" and row.detail.get("is_role", False):
+                continue
+            merged = merged_row(row)
+            sheet.append([merged.get(name, "") if merged.get(name) is not None else "" for name in fieldnames])
         buffer = io.BytesIO()
         book.save(buffer)
         response = HttpResponse(buffer.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         response["Content-Disposition"] = f'attachment; filename="{filter_type}-{base_name}-verified.xlsx"'
         return response
-    buffer = io.StringIO(newline="")
-    buffer.write("\ufeff")
-    writer = csv.DictWriter(buffer, fieldnames=fieldnames, extrasaction="ignore")
-    writer.writeheader()
-    for row in rows:
-        merged = dict(row.source_row)
-        merged.update({"verified_email": row.verified_email, "status": row.status, "reason": row.reason,
-                       "confidence": row.confidence, **row.detail})
-        writer.writerow(merged)
-    response = HttpResponse(buffer.getvalue(), content_type="text/csv; charset=utf-8")
+
+    def csv_chunks():
+        buffer = io.StringIO(newline="")
+        buffer.write("\ufeff")
+        writer = csv.DictWriter(buffer, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        yield buffer.getvalue()
+        buffer.seek(0)
+        buffer.truncate(0)
+        for row in chain([first], iterator):
+            if filter_type == "non_role" and row.detail.get("is_role", False):
+                continue
+            writer.writerow(merged_row(row))
+            yield buffer.getvalue()
+            buffer.seek(0)
+            buffer.truncate(0)
+
+    response = StreamingHttpResponse(csv_chunks(), content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = f'attachment; filename="{filter_type}-{base_name}-verified.csv"'
     return response
 
@@ -272,14 +294,16 @@ def control_dashboard(request):
 @admin_required
 def control_settings(request):
     settings_obj = _site_settings()
-    settings_form = SiteSettingsForm(request.POST or None, instance=settings_obj, prefix="site")
-    verification_form = SearchConsoleFileForm(request.POST or None, request.FILES or None, prefix="verification")
-    if request.method == "POST" and request.POST.get("action") == "save_settings":
+    is_settings_post = request.method == "POST" and request.POST.get("action") == "save_settings"
+    is_verification_post = request.method == "POST" and request.POST.get("action") == "upload_verification"
+    settings_form = SiteSettingsForm(request.POST if is_settings_post else None, instance=settings_obj, prefix="site")
+    verification_form = SearchConsoleFileForm(request.POST if is_verification_post else None, request.FILES if is_verification_post else None, prefix="verification")
+    if is_settings_post:
         if settings_form.is_valid():
             settings_form.save()
             messages.success(request, "Site settings and SEO metadata were saved.")
             return redirect("control_settings")
-    elif request.method == "POST" and request.POST.get("action") == "upload_verification":
+    elif is_verification_post:
         if verification_form.is_valid():
             uploaded = verification_form.cleaned_data["verification_file"]
             content = uploaded.read().decode("utf-8-sig")

@@ -3,41 +3,39 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Email Verifier</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' fill='%230C1210'/%3E%3Ctext x='2' y='17' font-family='monospace' font-size='13' font-weight='700' fill='%235EEAD4'%3E%26gt;_%3C/text%3E%3C/svg%3E">
+  <title>ProveMails — Email Verification</title>
+  <link rel="icon" type="image/svg+xml" href="static/img/provemails-logo.svg">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
 
     :root {
-      --bg: #0C1210;
-      --panel: #121815;
-      --fg: #E4E9E6;
-      --fg-muted: #7A8C82;
-      --border: #243029;
-      --accent: #5EEAD4;
-      --accent-dim: rgba(94, 234, 212, 0.08);
-
-      --valid: #4ADE80;   --valid-dim: rgba(74, 222, 128, 0.12);
-      --risky: #FBBF24;   --risky-dim: rgba(251, 191, 36, 0.12);
-      --unknown: #94A3B8; --unknown-dim: rgba(148, 163, 184, 0.12);
-      --invalid: #F87171; --invalid-dim: rgba(248, 113, 113, 0.12);
+      --bg: #F6F8FC;
+      --panel: #FFFFFF;
+      --fg: #17223B;
+      --fg-muted: #6B7890;
+      --border: #E2E8F3;
+      --accent: #4361EE;
+      --accent-dim: rgba(67, 97, 238, 0.08);
+      --valid: #16845B; --valid-dim: rgba(22, 132, 91, 0.09);
+      --risky: #A96D05; --risky-dim: rgba(217, 160, 32, 0.12);
+      --unknown: #667692; --unknown-dim: rgba(102, 118, 146, 0.10);
+      --invalid: #C83B55; --invalid-dim: rgba(200, 59, 85, 0.09);
     }
 
     @media (prefers-color-scheme: light) {
       :root {
-        --bg: #F4F1EA;
-        --panel: #FFFFFF;
-        --fg: #1B1F1D;
-        --fg-muted: #6B7268;
-        --border: #D8D3C4;
-        --accent: #0E7490;
-        --accent-dim: rgba(14, 116, 144, 0.06);
-
-        --valid: #15803D;   --valid-dim: rgba(21, 128, 61, 0.08);
-        --risky: #B45309;   --risky-dim: rgba(180, 83, 9, 0.08);
-        --unknown: #52525B; --unknown-dim: rgba(82, 82, 91, 0.08);
-        --invalid: #B91C1C; --invalid-dim: rgba(185, 28, 28, 0.08);
-      }
+      --bg: #F6F8FC;
+      --panel: #FFFFFF;
+      --fg: #17223B;
+      --fg-muted: #6B7890;
+      --border: #E2E8F3;
+      --accent: #4361EE;
+      --accent-dim: rgba(67, 97, 238, 0.08);
+      --valid: #16845B; --valid-dim: rgba(22, 132, 91, 0.09);
+      --risky: #A96D05; --risky-dim: rgba(217, 160, 32, 0.12);
+      --unknown: #667692; --unknown-dim: rgba(102, 118, 146, 0.10);
+      --invalid: #C83B55; --invalid-dim: rgba(200, 59, 85, 0.09);
+    }
     }
 
     * { box-sizing: border-box; }
@@ -47,17 +45,20 @@
       padding: 32px 16px;
       background: var(--bg);
       color: var(--fg);
-      font-family: 'JetBrains Mono', ui-monospace, "Cascadia Code", "Roboto Mono", monospace;
+      font-family: 'DM Sans', Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       font-size: 13.5px;
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
     }
 
     .window {
-      max-width: 720px;
+      max-width: 820px;
       margin: 0 auto;
       border: 1px solid var(--border);
+      border-radius: 22px;
+      overflow: hidden;
       background: var(--panel);
+      box-shadow: 0 24px 70px rgba(22, 38, 83, 0.10);
     }
 
     .titlebar {
@@ -65,10 +66,14 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 12px 18px;
+      padding: 16px 22px;
       border-bottom: 1px solid var(--border);
+      background: #fff;
     }
-    .titlebar .title { font-weight: 700; letter-spacing: 0.04em; font-size: 13px; }
+    .titlebar .title { display: flex; flex-direction: column; gap: 2px; font-weight: 800; letter-spacing: -0.02em; font-size: 16px; color: #101B36; }
+    .titlebar .title small { font-family: 'DM Sans', sans-serif; font-size: 8px; letter-spacing: 1.3px; color: #8B96AB; font-weight: 800; }
+    .brand-inline { display: flex; align-items: center; gap: 10px; }
+    .brand-inline img { display: block; }
 
     .status-indicator { display: none; align-items: center; gap: 6px; font-size: 11.5px; color: var(--fg-muted); white-space: nowrap; }
     .status-indicator.show { display: inline-flex; }
@@ -82,8 +87,10 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      border: 1px solid var(--border);
-      padding: 11px 14px;
+      border: 1px dashed #cad4ed;
+      border-radius: 13px;
+      background: #fafbff;
+      padding: 14px 16px;
       cursor: pointer;
       transition: border-color 150ms ease, background 150ms ease;
     }
@@ -110,7 +117,7 @@
     #jobs::-webkit-scrollbar-thumb { background: var(--border); }
     #jobs::-webkit-scrollbar-thumb:hover { background: var(--fg-muted); }
 
-    .job-block { border: 1px solid var(--border); padding: 14px 16px; }
+    .job-block { border: 1px solid var(--border); border-radius: 14px; padding: 16px 17px; background: #fff; }
 
     .job-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
     .job-line { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -148,8 +155,9 @@
     .tag.invalid { color: var(--invalid); border-color: var(--invalid); background: var(--invalid-dim); }
 
     .log-panel {
-      background: var(--bg);
+      background: #f7f9fd;
       border: 1px solid var(--border);
+      border-radius: 10px;
       padding: 8px 10px;
       height: 112px;
       overflow-y: auto;
@@ -211,8 +219,8 @@
     }
 
     @media (max-width: 480px) {
-      body { padding: 16px 8px; font-size: 12.5px; }
-      .titlebar { padding: 10px 14px; }
+      body { padding: 16px 8px; font-size: 13px; }
+      .titlebar { padding: 12px 14px; }
       .body-area { padding: 14px; }
     }
   </style>
@@ -220,7 +228,7 @@
 <body>
   <div class="window">
     <div class="titlebar">
-      <span class="title">[ EMAIL VERIFIER ]</span>
+      <div class="brand-inline"><img src="static/img/provemails-logo.svg" width="34" height="34" alt=""><span class="title">ProveMails<small>EMAIL VERIFICATION</small></span></div>
       <div class="status-indicator" id="smtp-indicator">
         <span class="status-dot"></span>
         <span class="status-label"></span>
@@ -239,7 +247,7 @@
     </div>
 
     <footer>
-      # this tool helps you find qualified leads.</footer>
+      ProveMails · Verify emails. Clean leads. Work smarter.</footer>
   </div>
 
   <script>

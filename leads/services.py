@@ -1,4 +1,5 @@
 import csv
+import io
 import os
 import re
 from datetime import date, datetime
@@ -30,7 +31,7 @@ def read_lead_file(file_path, original_filename):
             text = raw.decode("utf-8-sig")
         except UnicodeDecodeError:
             text = raw.decode("latin-1")
-        reader = csv.DictReader(text.splitlines())
+        reader = csv.DictReader(io.StringIO(text))
         if not reader.fieldnames:
             raise ValueError("The CSV file needs a header row.")
         headers = [str(h).strip() if h is not None else "" for h in reader.fieldnames]

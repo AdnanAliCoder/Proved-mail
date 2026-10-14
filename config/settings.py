@@ -57,9 +57,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 default_database = f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
+# Resolve empty environment values before parsing so local/CI use SQLite by default.
+database_url = os.getenv("DATABASE_URL", "").strip() or default_database
 DATABASES = {
-    "default": dj_database_url.config(
-        default=os.getenv("DATABASE_URL") or default_database,
+    "default": dj_database_url.parse(
+        database_url,
         conn_max_age=600,
         ssl_require=os.getenv("DATABASE_SSL_REQUIRE", "False").lower() in {"1", "true", "yes", "on"},
     )

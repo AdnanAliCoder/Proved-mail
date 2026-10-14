@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ job.source_filename }} | ProveMails{% endblock %}
+{% block meta_description %}Verification status and results for a ProveMails lead batch.{% endblock %}
+{% block content %}
+<section class="workspace-shell job-detail-shell" data-job-poll data-status-url="{% url 'job_status' job.id %}" data-finished="{% if job.status == 'completed' or job.status == 'canceled' or job.status == 'failed' %}true{% else %}false{% endif %}">
+  <a class="back-link" href="{% url 'dashboard' %}">← Back to workspace</a>
+  <div class="workspace-heading job-page-heading"><div><div class="eyebrow"><span class="eyebrow-dot"></span> VERIFICATION JOB</div><h1 class="job-filename-title">{{ job.source_filename }}</h1><p>Uploaded {{ job.created_at|date:"M j, Y · H:i" }} · Email column: {{ job.email_field|default:"Detecting…" }}</p></div><span id="job-status-pill" class="status-pill status-{{ job.status }}">{{ job.get_status_display }}</span></div>
+  {% if job.error %}<div class="notice notice-warning"><strong>Job issue</strong><p>{{ job.error }}</p></div>{% endif %}
+  <section class="panel job-progress-panel">
+    <div class="progress-title-row"><div><span class="panel-kicker">BATCH PROGRESS</span><h2 id="job-phase">{{ job.phase|title }}</h2><p id="job-progress-text">{{ job.completed }} of {{ job.total|default:"…" }} rows processed</p></div><div class="big-percent" id="job-percent">{{ job.progress_percent }}<small>%</small></div></div>
+    <div class="progress-track"><span id="job-progress-fill" style="width: {{ job.progress_percent }}%"></span></div>
+    <div class="progress-foot"><span id="smtp-status">{% if job.smtp_available == True %}SMTP port reachable{% elif job.smtp_available == False %}SMTP port blocked or unavailable{% else %}Checking SMTP availability…{% endif %}</span><span id="job-log">{{ job.last_log|default:"Waiting for worker…" }}</span></div>
+    {% if job.status == "queued" or job.status == "running" %}<form method="post" action="{% url 'cancel_job' job.id %}" class="cancel-form">{% csrf_token %}<button class="button button-secondary button-small" type="submit">Cancel job</button></form>{% endif %}
+  </section>
+  <div class="result-metrics">
+    <article class="result-count result-valid"><span>Valid</span><strong id="count-valid">{{ job.valid_count }}</strong></article>
+    <article class="result-count result-risky"><span>Risky</span><strong id="count-risky">{{ job.risky_count }}</strong></article>
+    <article class="result-count result-unknown"><span>Unknown</span><strong id="count-unknown">{{ job.unknown_count }}</strong></article>
+    <article class="result-count result-invalid"><span>Invalid</span><strong id="count-invalid">{{ job.invalid_count }}</strong></article>
+  </div>
+  <section class="panel history-panel">
+    <div class="panel-heading history-heading"><div><span class="panel-kicker">RESULTS</span><h2>Download your leads</h2><p>Every export keeps your original columns and adds verification details.</p></div></div>
+    {% if job.status == "completed" or job.status == "canceled" or job.status == "failed" %}
+      <div class="export-actions">
+        <a class="button button-primary" href="{% url 'download_results' job.id %}?type=all&format=csv">All results · CSV ↓</a>
+        <a class="button button-secondary" href="{% url 'download_results' job.id %}?type=valid&format=xlsx">Valid · Excel ↓</a>
+        <a class="button button-secondary" href="{% url 'download_results' job.id %}?type=risky&format=csv">Risky · CSV ↓</a>
+        <a class="button button-secondary" href="{% url 'download_results' job.id %}?type=unknown&format=csv">Unknown · CSV ↓</a>
+        <a class="button button-secondary" href="{% url 'download_results' job.id %}?type=invalid&format=csv">Invalid · CSV ↓</a>
+        <a class="button button-text" href="{% url 'download_results' job.id %}?type=all&format=xlsx">All results · Excel</a>
+      </div>
+      {% if results %}
+      <div class="table-scroll results-table-wrap"><table class="data-table"><thead><tr><th>Original email</th><th>Verified email</th><th>Status</th><th>Reason</th><th>Confidence</th></tr></thead><tbody>
+      {% for row in results %}<tr><td>{{ row.source_row|get_item:job.email_field }}</td><td>{{ row.verified_email }}</td><td><span class="status-pill status-{{ row.status }}">{{ row.status|title }}</span></td><td>{{ row.reason }}</td><td>{{ row.confidence }}%</td></tr>{% endfor %}
+      </tbody></table></div><p class="table-note">Showing the first 100 stored results. Download a file for the full batch.</p>
+      {% else %}<div class="empty-state"><h3>No classified rows to show</h3><p>The job may have stopped before any results were saved.</p></div>{% endif %}
+    {% else %}
+      <div class="empty-state"><span class="spinner"></span><h3>Your file is in the queue</h3><p>This page refreshes progress while the separate worker verifies the batch. Keep the worker process running.</p></div>
+    {% endif %}
+  </section>
+</section>
+{% endblock %}

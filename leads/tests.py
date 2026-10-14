@@ -31,6 +31,10 @@ from django.urls import reverse
 
 
 @override_settings(
+    STORAGES={
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    },
     PROVEDMAILS_ADMIN_EMAIL="adnan@example.com",
     PROVEDMAILS_ADMIN_SIGNUP_KEY="test-only-bootstrap-key",
 )
@@ -127,6 +131,10 @@ class SpreadsheetExportEndpointTests(TestCase):
         self.assertIn("'=HYPERLINK", content)
 
 
+@override_settings(STORAGES={
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+})
 class PublicBrandingAndSeoTests(TestCase):
     def test_site_name_setting_updates_global_brand(self):
         site_settings = SiteSettings.objects.get(pk=1)

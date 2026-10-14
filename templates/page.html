@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ page.seo_title|default:page.title }}{% endblock %}
+{% block meta_description %}{{ page.meta_description|default:site_settings.meta_description }}{% endblock %}
+{% block og_title %}{{ page.seo_title|default:page.title }}{% endblock %}
+{% block canonical %}{{ site_settings.site_url }}{% url 'public_page' page.slug %}{% endblock %}
+{% block content %}
+<section class="content-page-shell">
+  <div class="eyebrow"><span class="eyebrow-dot"></span> PROVEMAILS / INFORMATION</div>
+  <h1>{{ page.title }}</h1>
+  {% if page.meta_description %}<p class="content-page-intro">{{ page.meta_description }}</p>{% endif %}
+  <article class="content-page-body">{{ page.body_text|linebreaks }}</article>
+  <a href="{% url 'home' %}" class="back-link">← Back to ProveMails</a>
+</section>
+{% endblock %}

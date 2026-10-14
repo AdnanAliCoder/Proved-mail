@@ -7,3 +7,5 @@ gunicorn>=23,<24
 dnspython>=2.7,<3
 email-validator>=2.2,<3
 openpyxl>=3.1,<4
+Flask>=3.1,<4
+Flask-Cors>=5,<6

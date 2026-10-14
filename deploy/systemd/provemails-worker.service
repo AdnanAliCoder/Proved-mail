@@ -1,0 +1,19 @@
+[Unit]
+Description=ProveMails background email verification worker
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/Proved-mail
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/ubuntu/Proved-mail/.venv/bin/python manage.py process_jobs --poll-seconds 2
+Restart=always
+RestartSec=5
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

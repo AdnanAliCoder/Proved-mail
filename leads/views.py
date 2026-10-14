@@ -244,7 +244,7 @@ def download_results(request, job_id):
         response["Content-Disposition"] = f'attachment; filename="{filter_type}-{base_name}-verified.xlsx"'
         return response
     buffer = io.StringIO(newline="")
-    buffer.write("\\ufeff")
+    buffer.write("\ufeff")
     writer = csv.DictWriter(buffer, fieldnames=fieldnames, extrasaction="ignore")
     writer.writeheader()
     for row in rows:

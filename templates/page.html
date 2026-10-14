@@ -2,7 +2,7 @@
 {% block title %}{{ page.seo_title|default:page.title }}{% endblock %}
 {% block meta_description %}{{ page.meta_description|default:site_settings.meta_description }}{% endblock %}
 {% block og_title %}{{ page.seo_title|default:page.title }}{% endblock %}
-{% block canonical %}{{ site_settings.site_url }}{% url 'public_page' page.slug %}{% endblock %}
+{% block canonical %}{{ site_url }}{% url 'public_page' page.slug %}{% endblock %}
 {% block content %}
 <section class="content-page-shell">
   <div class="eyebrow"><span class="eyebrow-dot"></span> PROVEMAILS / INFORMATION</div>

@@ -7,16 +7,29 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.forms import AuthenticationForm
+from django.db import IntegrityError, transaction
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.html import escape
+from xml.sax.saxutils import escape as xml_escape
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 from .forms import AdminBootstrapForm, SearchConsoleFileForm, SitePageForm, SiteSettingsForm
 from .models import EmailJob, SearchConsoleVerification, SitePage, SiteSettings
 from .services import read_lead_file
+
+def _spreadsheet_safe_value(value):
+    """Keep untrusted lead values from being interpreted as spreadsheet formulas."""
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        return value
+    trimmed = value.lstrip()
+    if value.startswith(("\t", "\r", "\n")) or (trimmed and trimmed[0] in {"=", "+", "-", "@"}):
+        return "'" + value
+    return value
+
 
 STARTER_PAGES = [
     ("about", "About ProveMails", "What ProveMails does and how it handles verification results."),
@@ -103,17 +116,25 @@ def bootstrap_admin(request):
         })
     form = AdminBootstrapForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        # Re-check inside the request so a second bootstrap attempt cannot create another admin.
-        if User.objects.filter(is_superuser=True).exists():
-            messages.error(request, "The administrator account was already created.")
+        try:
+            with transaction.atomic():
+                # Lock the singleton settings row so overlapping first-run requests
+                # cannot both pass the one-administrator check on databases with row locks.
+                SiteSettings.objects.get_or_create(pk=1, defaults={"site_url": settings.SITE_URL})
+                SiteSettings.objects.select_for_update().get(pk=1)
+                if User.objects.filter(is_superuser=True).exists():
+                    messages.info(request, "The one-time administrator account has already been created. Sign in instead.")
+                    return redirect("login")
+                email = form.cleaned_data["email"]
+                user = User.objects.create_superuser(
+                    username=email,
+                    email=email,
+                    password=form.cleaned_data["password1"],
+                    first_name=form.cleaned_data["full_name"].strip()[:150],
+                )
+        except IntegrityError:
+            messages.info(request, "The administrator account has already been created. Sign in instead.")
             return redirect("login")
-        email = form.cleaned_data["email"]
-        user = User.objects.create_superuser(
-            username=email,
-            email=email,
-            password=form.cleaned_data["password1"],
-            first_name=form.cleaned_data["full_name"].strip()[:150],
-        )
         login(request, user, backend="leads.auth_backends.EmailBackend")
         messages.success(request, "Your administrator workspace is ready.")
         return redirect("control_dashboard")
@@ -246,12 +267,12 @@ def download_results(request, job_id):
         from openpyxl import Workbook
         book = Workbook(write_only=True)
         sheet = book.create_sheet("Verified leads")
-        sheet.append(fieldnames)
+        sheet.append([_spreadsheet_safe_value(name) for name in fieldnames])
         for row in chain([first], iterator):
             if filter_type == "non_role" and row.detail.get("is_role", False):
                 continue
             merged = merged_row(row)
-            sheet.append([merged.get(name, "") if merged.get(name) is not None else "" for name in fieldnames])
+            sheet.append([_spreadsheet_safe_value(merged.get(name, "")) for name in fieldnames])
         buffer = io.BytesIO()
         book.save(buffer)
         response = HttpResponse(buffer.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -261,15 +282,16 @@ def download_results(request, job_id):
     def csv_chunks():
         buffer = io.StringIO(newline="")
         buffer.write("\ufeff")
-        writer = csv.DictWriter(buffer, fieldnames=fieldnames, extrasaction="ignore")
-        writer.writeheader()
+        writer = csv.writer(buffer)
+        writer.writerow([_spreadsheet_safe_value(name) for name in fieldnames])
         yield buffer.getvalue()
         buffer.seek(0)
         buffer.truncate(0)
         for row in chain([first], iterator):
             if filter_type == "non_role" and row.detail.get("is_role", False):
                 continue
-            writer.writerow(merged_row(row))
+            merged = merged_row(row)
+            writer.writerow([_spreadsheet_safe_value(merged.get(name, "")) for name in fieldnames])
             yield buffer.getvalue()
             buffer.seek(0)
             buffer.truncate(0)
@@ -361,11 +383,23 @@ def robots_txt(request):
     return HttpResponse(text, content_type="text/plain")
 
 def sitemap_xml(request):
-    site_url = (_site_settings().site_url or settings.SITE_URL).rstrip("/")
-    paths = ["/"]
-    paths += [f"/pages/{p.slug}/" for p in SitePage.objects.filter(is_published=True).order_by("slug")]
-    urls = "".join(f"<url><loc>{escape(site_url + path)}</loc></url>" for path in paths)
-    xml = '<?xml version="1.0" encoding="UTF-8"?>' + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + urls + "</urlset>"
+    site = _site_settings()
+    site_url = (site.site_url or settings.SITE_URL).rstrip("/")
+    urls = [
+        "<url><loc>" + xml_escape(site_url + "/") + "</loc>"
+        + f"<lastmod>{site.updated_at.date().isoformat()}</lastmod></url>"
+    ]
+    pages = SitePage.objects.filter(is_published=True).order_by("slug")
+    for page in pages:
+        path = reverse("public_page", kwargs={"slug": page.slug})
+        urls.append(
+            "<url><loc>" + xml_escape(site_url + path) + "</loc>"
+            + f"<lastmod>{page.updated_at.date().isoformat()}</lastmod></url>"
+        )
+    xml = '<?xml version="1.0" encoding="UTF-8"?>' + (
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        + "".join(urls) + "</urlset>"
+    )
     return HttpResponse(xml, content_type="application/xml")
 
 def search_console_verification(request, filename):

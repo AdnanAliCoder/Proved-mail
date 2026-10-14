@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#101b36">
   <meta name="robots" content="{% block robots %}index,follow{% endblock %}">
   <meta name="description" content="{% block meta_description %}{{ site_settings.meta_description|default:'Verify email leads, identify risky addresses, and export clean lead lists with ProveMails.' }}{% endblock %}">
-  <meta property="og:site_name" content="ProveMails">
+  <meta property="og:site_name" content="{{ site_settings.site_name|default:'ProveMails' }}">
   <meta property="og:title" content="{% block og_title %}{{ site_settings.homepage_title|default:'ProveMails — Bulk Email Verification' }}{% endblock %}">
   <meta property="og:description" content="{% block og_description %}{{ site_settings.meta_description|default:'Verify email leads and clean your lead lists.' }}{% endblock %}">
   <meta property="og:url" content="{% block og_url %}{{ site_url|default:'http://127.0.0.1:8000' }}{{ request.path }}{% endblock %}">
@@ -25,9 +25,9 @@
 <body class="{% block body_class %}{% endblock %}">
   <header class="site-header">
     <div class="nav-wrap">
-      <a class="brand" href="{% url 'home' %}" aria-label="ProveMails home">
+      <a class="brand" href="{% url 'home' %}" aria-label="{{ site_settings.site_name|default:'ProveMails' }} home">
         <img src="{% static 'img/provemails-logo.svg' %}" width="42" height="42" alt="">
-        <span class="brand-copy"><strong>ProveMails</strong><small>EMAIL VERIFICATION</small></span>
+        <span class="brand-copy"><strong>{{ site_settings.site_name|default:'ProveMails' }}</strong><small>EMAIL VERIFICATION</small></span>
       </a>
       <button class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" data-nav-toggle>
         <span></span><span></span><span></span>
@@ -63,7 +63,7 @@
       <div class="footer-brand">
         <a class="brand brand-footer" href="{% url 'home' %}">
           <img src="{% static 'img/provemails-logo.svg' %}" width="38" height="38" alt="">
-          <span class="brand-copy"><strong>ProveMails</strong><small>VERIFY WITH CLARITY</small></span>
+          <span class="brand-copy"><strong>{{ site_settings.site_name|default:'ProveMails' }}</strong><small>VERIFY WITH CLARITY</small></span>
         </a>
         <p>Know what your list contains before you send. Keep your lead data organized, review uncertain results, and export only what you need.</p>
       </div>
@@ -79,7 +79,7 @@
         {% if request.user.is_authenticated and request.user.is_superuser %}<a href="{% url 'control_settings' %}">Site settings</a>{% endif %}
       </div>
     </div>
-    <div class="footer-bottom"><span>© {% now "Y" %} ProveMails</span><span>Valid · Risky · Unknown · Invalid</span></div>
+    <div class="footer-bottom"><span>© {% now "Y" %} {{ site_settings.site_name|default:'ProveMails' }}</span><span>Valid · Risky · Unknown · Invalid</span></div>
   </footer>
   <script src="{% static 'js/app.js' %}" defer></script>
   {% block scripts %}{% endblock %}

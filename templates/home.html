@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ site_settings.homepage_title|default:"ProveMails — Bulk Email Verification" }}{% endblock %}
+{% block content %}
+<section class="hero-section">
+  <div class="hero-copy">
+    <div class="eyebrow"><span class="eyebrow-dot"></span> EMAIL LIST INTELLIGENCE</div>
+    <h1>Know your list.<br><span>Send with confidence.</span></h1>
+    <p class="hero-lede">{{ site_settings.tagline|default:"Verify emails. Clean leads. Work smarter." }} Upload your lead file, inspect the results, and export a cleaner list in minutes.</p>
+    <div class="hero-actions">
+      <a class="button button-primary button-large" href="{% url 'login' %}">Open workspace <span aria-hidden="true">↗</span></a>
+      {% if bootstrap_available %}<a class="button button-secondary button-large" href="{% url 'bootstrap_admin' %}">Set up admin</a>{% else %}<a class="button button-text button-large" href="#features">Explore features <span aria-hidden="true">↓</span></a>{% endif %}
+    </div>
+    <div class="hero-proof"><span class="proof-check">✓</span> Built for CSV and Excel leads <span class="proof-divider"></span><span class="proof-check">✓</span> Reviewable, downloadable results</div>
+  </div>
+  <div class="hero-visual" aria-label="Illustration of email verification results">
+    <div class="visual-glow"></div>
+    <div class="verification-card">
+      <div class="visual-top"><div class="visual-brand"><img src="{% static 'img/provemails-logo.svg' %}" alt="" width="32" height="32"><span><strong>List overview</strong><small>LEAD VERIFICATION</small></span></div><span class="live-pill"><i></i> Ready</span></div>
+      <div class="visual-score"><div><span class="muted-label">LIST HEALTH</span><strong>Clear results</strong><small>Classify before you export</small></div><div class="score-ring"><span>4</span><small>statuses</small></div></div>
+      <div class="visual-stat stat-valid"><span class="stat-icon">✓</span><span><strong>Valid</strong><small>Looks deliverable</small></span><b>01</b></div>
+      <div class="visual-stat stat-risky"><span class="stat-icon">!</span><span><strong>Risky</strong><small>Needs extra care</small></span><b>02</b></div>
+      <div class="visual-stat stat-unknown"><span class="stat-icon">?</span><span><strong>Unknown</strong><small>Could not confirm</small></span><b>03</b></div>
+      <div class="visual-stat stat-invalid"><span class="stat-icon">×</span><span><strong>Invalid</strong><small>Failed verification checks</small></span><b>04</b></div>
+      <div class="visual-foot"><span class="mini-shield">◇</span> Results you can review and understand</div>
+    </div>
+    <div class="float-note float-note-top"><span class="float-note-icon">↗</span><span><strong>CSV + XLSX</strong><small>Flexible input</small></span></div>
+    <div class="float-note float-note-bottom"><span class="float-note-icon mint">✓</span><span><strong>Export ready</strong><small>Download by status</small></span></div>
+  </div>
+</section>
+
+<section class="trust-strip">
+  <div><strong>01</strong><span>Upload a lead file</span></div><span class="strip-line"></span>
+  <div><strong>02</strong><span>Run verification checks</span></div><span class="strip-line"></span>
+  <div><strong>03</strong><span>Review and export</span></div>
+</section>
+
+<section class="feature-section section-wrap" id="features">
+  <div class="section-heading"><div><div class="eyebrow">A CLEANER WORKFLOW</div><h2>Everything you need to<br><span>organize your leads.</span></h2></div><p>Keep your original columns, see verification signals, and choose the right export for your next step.</p></div>
+  <div class="feature-grid">
+    <article class="feature-card"><div class="feature-icon icon-blue">⇧</div><h3>Simple bulk uploads</h3><p>Drag in a CSV or XLSX file. ProveMails identifies a likely email column and keeps the rest of your lead data attached to each result.</p><span class="feature-number">01 / IMPORT</span></article>
+    <article class="feature-card"><div class="feature-icon icon-mint">✓</div><h3>Clear result categories</h3><p>Review valid, invalid, risky and unknown addresses alongside reasons, confidence and domain signals.</p><span class="feature-number">02 / VERIFY</span></article>
+    <article class="feature-card"><div class="feature-icon icon-violet">⇩</div><h3>Exports that fit your workflow</h3><p>Download every result or filter by status. Export CSV or Excel without losing the columns from your original list.</p><span class="feature-number">03 / EXPORT</span></article>
+  </div>
+</section>
+
+<section class="privacy-band">
+  <div class="privacy-mark"><img src="{% static 'img/provemails-logo.svg' %}" alt="" width="48" height="48"></div>
+  <div><div class="eyebrow">HONEST SIGNALS, NOT GUESSES</div><h2>Some addresses need a second look.</h2><p>Mail providers can block or obscure mailbox checks. ProveMails keeps uncertain results separate instead of calling every unconfirmed address valid.</p></div>
+  <a class="button button-light" href="{% url 'login' %}">Go to workspace <span>↗</span></a>
+</section>
+{% endblock %}

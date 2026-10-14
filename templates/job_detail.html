@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ job.source_filename }} | ProveMails{% endblock %}
+{% load leads_tags %}{% block title %}{{ job.source_filename }} | ProveMails{% endblock %}
 {% block meta_description %}Verification status and results for a ProveMails lead batch.{% endblock %}
 {% block content %}
 <section class="workspace-shell job-detail-shell" data-job-poll data-status-url="{% url 'job_status' job.id %}" data-finished="{% if job.status == 'completed' or job.status == 'canceled' or job.status == 'failed' %}true{% else %}false{% endif %}">

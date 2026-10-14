@@ -5,7 +5,7 @@ from django.contrib.auth.password_validation import validate_password
 from .models import SiteSettings, SitePage
 
 class AdminBootstrapForm(forms.Form):
-    full_name = forms.CharField(max_length=150, label="Your name")
+    full_name = forms.CharField(max_length=150, label="Your name", initial="Adnan Ali")
     email = forms.EmailField()
     setup_key = forms.CharField(label="One-time setup key", widget=forms.PasswordInput)
     password1 = forms.CharField(label="Create a password", widget=forms.PasswordInput)

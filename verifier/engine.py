@@ -149,29 +149,57 @@ def _domain_key(raw_email: str) -> str:
 
 
 def _verify_rows(rows, email_field, indices, on_progress, should_cancel, progress_offset, progress_total):
-    """Runs verify_email for the given row indices concurrently, domain-grouped
-    for cache locality. Returns {index: EmailResult}."""
-    order = sorted(indices, key=lambda i: _domain_key(rows[i].get(email_field, "") or "") if email_field else "")
+    """Run a bounded number of verification futures at once.
 
+    A bounded submission window avoids allocating a Future for every row in
+    a 50k+ lead batch. Results still retain their original input positions.
+    """
+    order = sorted(indices, key=lambda i: _domain_key(rows[i].get(email_field, "") or "") if email_field else "")
     out = {}
     completed = progress_offset
-    with ThreadPoolExecutor(max_workers=config.get("max_workers")) as executor:
-        futures = {}
-        for i in order:
-            if should_cancel and should_cancel():
-                break
-            raw = (rows[i].get(email_field) or "").strip() if email_field else ""
-            futures[executor.submit(verify_email, raw)] = i
+    max_workers = max(1, int(config.get("max_workers")))
+    submit_window = max_workers * 4
+    next_index = 0
 
-        for future in as_completed(futures):
-            i = futures[future]
-            try:
-                out[i] = future.result()
-            except Exception:
-                out[i] = EmailResult(email=rows[i].get(email_field, ""), status=INVALID, reason="internal_error")
-            completed += 1
-            if on_progress:
-                on_progress(completed, progress_total, out[i])
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {}
+
+        def submit_available():
+            nonlocal next_index
+            while next_index < len(order) and len(futures) < submit_window:
+                if should_cancel and should_cancel():
+                    return
+                i = order[next_index]
+                next_index += 1
+                raw = (rows[i].get(email_field) or "").strip() if email_field else ""
+                futures[executor.submit(verify_email, raw)] = i
+
+        submit_available()
+        while futures:
+            if should_cancel and should_cancel():
+                # Stop not-yet-started tasks and do not schedule any more rows.
+                for future in list(futures):
+                    future.cancel()
+
+            done, _ = wait(futures, timeout=0.25, return_when=FIRST_COMPLETED)
+            if not done:
+                continue
+
+            for future in done:
+                i = futures.pop(future)
+                if future.cancelled():
+                    continue
+                try:
+                    out[i] = future.result()
+                except Exception:
+                    out[i] = EmailResult(email=rows[i].get(email_field, ""), status=INVALID, reason="internal_error")
+                completed += 1
+                if on_progress:
+                    on_progress(completed, progress_total, out[i])
+
+            if not (should_cancel and should_cancel()):
+                submit_available()
+
     return out
 
 

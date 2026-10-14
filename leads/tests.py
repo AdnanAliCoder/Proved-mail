@@ -58,7 +58,10 @@ class AdminBootstrapTests(TestCase):
         self.assertNotEqual(user.password, password)
 
         second_attempt = self.client.get(reverse("bootstrap_admin"))
-        self.assertRedirects(second_attempt, reverse("login"))
+        # The already-authenticated admin is redirected away from login again;
+        # assert the bootstrap endpoint's redirect without fetching /login/.
+        self.assertEqual(second_attempt.status_code, 302)
+        self.assertEqual(second_attempt.url, reverse("login"))
         self.assertEqual(get_user_model().objects.filter(is_superuser=True).count(), 1)
 
     def test_wrong_setup_key_does_not_create_user(self):

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Site settings & SEO | ProveMails{% endblock %}
+{% block content %}
+<section class="workspace-shell admin-shell">
+  <a class="back-link" href="{% url 'control_dashboard' %}">← Back to admin panel</a>
+  <div class="workspace-heading"><div><div class="eyebrow">OWNER CONTROLS</div><h1>Site <span>settings.</span></h1><p>Change public branding, SEO and optional tracking snippets from one place.</p></div></div>
+  <div class="settings-layout">
+    <section class="panel settings-panel"><div class="panel-heading"><div><span class="panel-kicker">BRANDING & SEO</span><h2>General settings</h2><p>These values update the public site and its search engine metadata.</p></div></div>
+      <form method="post" class="form-stack settings-form">{% csrf_token %}<input type="hidden" name="action" value="save_settings">
+        {% for field in settings_form %}<div class="field {% if field.name == 'adsense_code' or field.name == 'analytics_code' or field.name == 'extra_head_code' %}field-code{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% if field.errors %}<div class="field-error">{{ field.errors|striptags }}</div>{% endif %}</div>{% endfor %}
+        <button type="submit" class="button button-primary">Save site settings <span>✓</span></button>
+      </form>
+    </section>
+    <aside class="settings-aside">
+      <div class="panel side-info"><span class="side-info-icon">⌕</span><h3>Search engine basics</h3><p>Use a public HTTPS domain in Site URL when deploying. ProveMails generates robots.txt and sitemap.xml from your published pages.</p><a href="{% url 'robots_txt' %}" target="_blank" rel="noopener">View robots.txt ↗</a><a href="{% url 'sitemap_xml' %}" target="_blank" rel="noopener">View sitemap.xml ↗</a></div>
+      <div class="panel side-info"><span class="side-info-icon">ⓘ</span><h3>Tracking snippets</h3><p>Only paste official code for properties you own. Saved scripts are inserted into the public page head.</p><p class="small-note">AdSense approval, Analytics reporting and search indexing are handled by Google after its own review.</p></div>
+    </aside>
+  </div>
+  <section class="panel verification-upload-panel"><div class="panel-heading"><div><span class="panel-kicker">GOOGLE SEARCH CONSOLE</span><h2>Upload HTML verification file</h2><p>Upload the original Google-provided file. ProveMails will serve it at the matching root URL.</p></div><span class="round-icon">✓</span></div>
+    <form method="post" enctype="multipart/form-data" class="verification-form">{% csrf_token %}<input type="hidden" name="action" value="upload_verification"><div class="field"><label for="{{ verification_form.verification_file.id_for_label }}">{{ verification_form.verification_file.label }}</label>{{ verification_form.verification_file }}<small>Example file name: google123abc.html. File content is checked before saving.</small>{% if verification_form.verification_file.errors %}<div class="field-error">{{ verification_form.verification_file.errors|striptags }}</div>{% endif %}</div><button class="button button-secondary" type="submit">Upload verification file <span>↑</span></button></form>
+    {% if verification_files %}<div class="verification-list"><strong>Uploaded verification files</strong>{% for item in verification_files %}<a href="/{{ item.filename }}" target="_blank" rel="noopener"><span>✓ {{ item.filename }}</span><small>View served file ↗</small></a>{% endfor %}</div>{% endif %}
+  </section>
+</section>
+{% endblock %}

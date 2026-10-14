@@ -1,0 +1,19 @@
+[Unit]
+Description=ProveMails Django web application
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/Proved-mail
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/ubuntu/Proved-mail/.venv/bin/gunicorn config.wsgi:application --bind 127.0.0.1:8000 --workers 2 --threads 4 --timeout 120
+Restart=always
+RestartSec=5
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

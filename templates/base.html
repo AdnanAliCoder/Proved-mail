@@ -1,0 +1,84 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101b36">
+  <meta name="description" content="{% block meta_description %}{{ site_settings.meta_description|default:'Verify email leads, identify risky addresses, and export clean lead lists with ProveMails.' }}{% endblock %}">
+  <meta property="og:site_name" content="ProveMails">
+  <meta property="og:title" content="{% block og_title %}{{ site_settings.homepage_title|default:'ProveMails — Bulk Email Verification' }}{% endblock %}">
+  <meta property="og:description" content="{{ site_settings.meta_description|default:'Verify email leads and clean your lead lists.' }}">
+  <meta property="og:type" content="website">
+  <link rel="canonical" href="{% block canonical %}{{ site_settings.site_url|default:'http://127.0.0.1:8000' }}{{ request.path }}{% endblock %}">
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/provemails-logo.svg' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <title>{% block title %}{{ site_settings.homepage_title|default:'ProveMails — Bulk Email Verification' }}{% endblock %}</title>
+  {% if site_settings.analytics_code %}{{ site_settings.analytics_code|safe }}{% endif %}
+  {% if site_settings.adsense_code %}{{ site_settings.adsense_code|safe }}{% endif %}
+  {% if site_settings.extra_head_code %}{{ site_settings.extra_head_code|safe }}{% endif %}
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <header class="site-header">
+    <div class="nav-wrap">
+      <a class="brand" href="{% url 'home' %}" aria-label="ProveMails home">
+        <img src="{% static 'img/provemails-logo.svg' %}" width="42" height="42" alt="">
+        <span class="brand-copy"><strong>ProveMails</strong><small>EMAIL VERIFICATION</small></span>
+      </a>
+      <button class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" data-nav-toggle>
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="main-nav" data-nav>
+        {% if request.user.is_authenticated and request.user.is_superuser %}
+          <a href="{% url 'dashboard' %}">Workspace</a>
+          <a href="{% url 'control_dashboard' %}">Admin panel</a>
+          <form method="post" action="{% url 'logout' %}" class="nav-logout">{% csrf_token %}<button type="submit" class="nav-login">Sign out</button></form>
+        {% else %}
+          <a href="{% url 'home' %}#features">Features</a>
+          <a href="{% url 'public_page' 'about' %}">About</a>
+          <a class="nav-login" href="{% url 'login' %}">Log in</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  {% if messages %}
+  <div class="flash-wrap" aria-live="polite">
+    {% for message in messages %}
+      <div class="flash flash-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-main">
+      <div class="footer-brand">
+        <a class="brand brand-footer" href="{% url 'home' %}">
+          <img src="{% static 'img/provemails-logo.svg' %}" width="38" height="38" alt="">
+          <span class="brand-copy"><strong>ProveMails</strong><small>VERIFY WITH CLARITY</small></span>
+        </a>
+        <p>Know what your list contains before you send. Keep your lead data organized, review uncertain results, and export only what you need.</p>
+      </div>
+      <div class="footer-links">
+        <strong>Explore</strong>
+        <a href="{% url 'public_page' 'about' %}">About us</a>
+        <a href="{% url 'public_page' 'contact' %}">Contact</a>
+      </div>
+      <div class="footer-links">
+        <strong>Information</strong>
+        <a href="{% url 'public_page' 'privacy-policy' %}">Privacy policy</a>
+        <a href="{% url 'public_page' 'terms' %}">Terms of use</a>
+        {% if request.user.is_authenticated and request.user.is_superuser %}<a href="{% url 'control_settings' %}">Site settings</a>{% endif %}
+      </div>
+    </div>
+    <div class="footer-bottom"><span>© {% now "Y" %} ProveMails</span><span>Valid · Risky · Unknown · Invalid</span></div>
+  </footer>
+  <script src="{% static 'js/app.js' %}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

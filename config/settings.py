@@ -9,6 +9,7 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "local-development-only-change-before-deploy")
 DEBUG = os.getenv("DJANGO_DEBUG", "True").strip().lower() in {"1", "true", "yes", "on"}
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()]
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if origin.strip()]
 SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000").rstrip("/")
 PROVEDMAILS_ADMIN_EMAIL = os.getenv("PROVEDMAILS_ADMIN_EMAIL", "").strip().lower()
 PROVEDMAILS_ADMIN_SIGNUP_KEY = os.getenv("PROVEDMAILS_ADMIN_SIGNUP_KEY", "")

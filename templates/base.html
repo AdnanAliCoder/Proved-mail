@@ -5,12 +5,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101b36">
+  <meta name="robots" content="{% block robots %}index,follow{% endblock %}">
   <meta name="description" content="{% block meta_description %}{{ site_settings.meta_description|default:'Verify email leads, identify risky addresses, and export clean lead lists with ProveMails.' }}{% endblock %}">
   <meta property="og:site_name" content="ProveMails">
   <meta property="og:title" content="{% block og_title %}{{ site_settings.homepage_title|default:'ProveMails — Bulk Email Verification' }}{% endblock %}">
   <meta property="og:description" content="{{ site_settings.meta_description|default:'Verify email leads and clean your lead lists.' }}">
   <meta property="og:type" content="website">
-  <link rel="canonical" href="{% block canonical %}{{ site_settings.site_url|default:'http://127.0.0.1:8000' }}{{ request.path }}{% endblock %}">
+  <link rel="canonical" href="{% block canonical %}{{ site_url|default:'http://127.0.0.1:8000' }}{{ request.path }}{% endblock %}">
   <link rel="icon" type="image/svg+xml" href="{% static 'img/provemails-logo.svg' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <title>{% block title %}{{ site_settings.homepage_title|default:'ProveMails — Bulk Email Verification' }}{% endblock %}</title>

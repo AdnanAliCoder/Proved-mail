@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Edit public pages | ProveMails{% endblock %}
+{% block content %}
+<section class="workspace-shell admin-shell">
+  <a class="back-link" href="{% url 'control_dashboard' %}">← Back to admin panel</a>
+  <div class="workspace-heading"><div><div class="eyebrow">OWNER CONTROLS</div><h1>Public <span>pages.</span></h1><p>Update footer pages and search metadata without editing code.</p></div></div>
+  <section class="panel history-panel">
+    <div class="panel-heading"><div><span class="panel-kicker">CONTENT MANAGEMENT</span><h2>Pages on your website</h2><p>Page body content is plain text, with line breaks displayed on the live page.</p></div><span class="count-pill">{{ pages|length }} pages</span></div>
+    <div class="page-editor-list">{% for page in pages %}<article class="page-editor-item"><span class="page-editor-icon">▤</span><div class="page-editor-main"><h3>{{ page.title }}</h3><p>/pages/{{ page.slug }}/</p><div class="page-editor-meta"><span class="status-pill {% if page.is_published %}status-completed{% else %}status-canceled{% endif %}">{% if page.is_published %}Published{% else %}Draft{% endif %}</span><span>Updated {{ page.updated_at|date:"M j, Y" }}</span></div></div><div class="page-editor-actions"><a class="button button-secondary button-small" href="{% url 'edit_page' page.slug %}">Edit page</a>{% if page.is_published %}<a class="text-link" href="{% url 'public_page' page.slug %}" target="_blank" rel="noopener">View ↗</a>{% endif %}</div></article>{% endfor %}</div>
+  </section>
+</section>
+{% endblock %}

@@ -1,99 +1,103 @@
-# Email Verifier
+# ProveMails
 
-This is a local cold email verification tool. Drag in a CSV and it will:
-- Validate each email live (MX, SMTP, syntax)
-- Show real-time progress per file
-- Let you cancel jobs mid-run
-- Persist your results even after refresh
-- Let you download the verified leads when ready
+ProveMails is a private, administrator-managed email verification website. It uses HTML, CSS and vanilla JavaScript for the interface, Django/Python for the web backend, and the existing verification engine in the verifier package.
 
-<img width="869" height="420" alt="image" src="https://github.com/user-attachments/assets/a0e8dd2a-3461-4930-9b6d-b3da451f658d" />
+## Features
 
-<img width="928" height="638" alt="image" src="https://github.com/user-attachments/assets/ab17849e-53b5-493c-9d4d-d3e5eb2b26cf" />
+- A new responsive ProveMails brand and public landing page.
+- A private workspace with CSV/XLSX upload, progress polling, cancellation, job history and status counts.
+- Existing verification signals retained: syntax, DNS/MX, disposable and role addresses, SPF/DMARC, typo suggestions, catch-all behavior, and SMTP recipient checks where the network permits them.
+- Separate Valid, Invalid, Risky and Unknown result categories. Unknown means the mailbox could not be confirmed; it should not automatically be treated as invalid.
+- Download all results or filter by status as CSV or XLSX. The input columns are retained and verification columns are added.
+- A one-time administrator bootstrap page. The permitted admin email and setup key come from the server environment. After the first administrator is created, public registration closes.
+- Admin settings for website branding, title/description metadata, Google AdSense code, Google Analytics code, and additional head snippets.
+- Google Search Console HTML verification-file upload that serves the verified file name from the website root.
+- Editable About, Privacy Policy, Terms of Use and Contact pages, with page-specific SEO titles and descriptions.
+- Dynamic robots.txt and sitemap.xml.
+- SQLite by default for local testing; PostgreSQL via DATABASE_URL for an Oracle Cloud VM.
+- A separate background worker so long verification batches do not block normal website requests.
 
-<img width="840" height="838" alt="image" src="https://github.com/user-attachments/assets/b404305c-588e-45dc-acb1-f897d6c04207" />
+## Windows 10: run locally
 
+Install Python 3.11 or a compatible newer Python and Git. Open PowerShell in the repository folder.
 
----
+    py -3.11 -m venv .venv
+    .\.venv\Scripts\Activate.ps1
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+    Copy-Item .env.example .env
 
-## 🧱 Setup
+Open .env in a text editor and set these values before the first run:
 
-1. Clone the repo:
-```
-git clone [repo-link]
-```
+- DJANGO_SECRET_KEY — replace the example with a long, random secret.
+- DJANGO_DEBUG=True for local development.
+- ALLOWED_HOSTS=127.0.0.1,localhost
+- SITE_URL=http://127.0.0.1:8000
+- PROVEDMAILS_ADMIN_EMAIL — the single email address permitted to create the admin account.
+- PROVEDMAILS_ADMIN_SIGNUP_KEY — a private, hard-to-guess one-time setup key.
 
-2. Open the Folder
+Leave DATABASE_URL empty to use a local SQLite database.
 
----
+Run database migrations and start Django:
 
-## ⚙️ Install Dependencies
+    python manage.py migrate
+    python manage.py check
+    python manage.py runserver
 
-Open Terminal, then run:
+Open http://127.0.0.1:8000 in your browser. The public site is served by Django; do not use Python's static http.server for the main app.
 
-```bash
-cd "/Users/yourname/Desktop/Email Verifier"
-python3 -m venv venv
-source venv/bin/activate
-pip install flask flask-cors dnspython email-validator
-```
+In a second PowerShell window, change to the same project directory, activate the virtual environment, and start the queue worker:
 
----
+    .\.venv\Scripts\Activate.ps1
+    python manage.py process_jobs --poll-seconds 2
 
-## 🚀 Run the App
+The worker must remain running while verification jobs are being processed. Stop it with Ctrl+C when finished.
 
-### Terminal Tab 1:
-```bash
-source venv/bin/activate
-python3 verify-app.py
-```
-You should see one of:
-```
-[SMTP OK] Port 25 is reachable - live mailbox verification is active.
-```
-```
-[SMTP BLOCKED] Port 25 is blocked on this network - running in offline mode.
-  Results will use 'unknown' + a confidence score instead of a false 'valid'.
-```
+## Create the only administrator account
 
-### Terminal Tab 2:
-```bash
-cd "/Users/yourname/Desktop/Email Verifier"
-python3 -m http.server 3000
-```
+Open /admin-signup/ on the local site. Enter the exact PROVEDMAILS_ADMIN_EMAIL configured in .env, the PROVEDMAILS_ADMIN_SIGNUP_KEY, your name and a strong password. The password is stored using Django's password hashing, not plain text.
 
----
+After the account is created, the public sign-up page closes automatically. Remove PROVEDMAILS_ADMIN_SIGNUP_KEY from .env after the first setup if you do not need to recreate the database. Never commit .env or share its key.
 
-## 🌐 Use the Tool
+If you delete the local database and need to bootstrap again, configure a new setup key and run migrations again. Keep database backups secure.
 
-Open in your browser:
-```
-http://localhost:3000/index.html
-```
+## Configure website settings
 
-- Drag in one or more CSVs
-- Each file shows a progress bar, live email log, cancel button, and close (X)
-- When done, a download link will appear
-- Everything persists across refreshes
+Sign in with the administrator account, then open Admin panel.
 
----
+- Site & SEO settings: edit the site name, tagline, public site URL, page title and description.
+- Google AdSense: paste the official snippet for a property you control.
+- Google Analytics: paste the official tag/snippet for your property.
+- Extra head code: use for additional scripts or verification snippets when needed.
+- Search Console: upload the original Google HTML verification file. It must retain a name like google123abc.html and include Google's verification token.
+- Public pages: update each page's content, SEO title, meta description and publication state.
 
-## ⚙️ Configuration (optional)
+Only the superuser can reach these controls. These editable snippets are rendered as administrator-supplied HTML; only paste code from sources you trust.
 
-Copy `verifier_config.example.json` to `verifier_config.json` to override any default. All fields are optional; unset ones use the defaults below.
+## Oracle Cloud production deployment
 
-- `helo_hostname` — the domain the verifier identifies itself as on SMTP (HELO/EHLO + MAIL FROM). Defaults to this machine's hostname. The verifier never sends an actual email (it disconnects right after the RCPT check, before the DATA stage), so setting this to a domain you own is safe for that domain's sending reputation — only the probing IP address accumulates any reputation signal, not the domain.
-- `max_workers` (15) — concurrent verification threads.
-- `per_domain_max_concurrent` (2) / `per_domain_delay_s` (1.0) — throttles how hard any single mail server gets hit, to avoid rate-limit blocks.
-- `catchall_probe_count` (2) — random addresses probed per domain to detect catch-all (accept-everything) domains.
-- `enable_second_pass` (true) / `greylist_retry_delay_s` (90) — greylisted/rate-limited addresses are automatically re-checked after this delay, recovering mailboxes a single pass would miss.
-- `enable_gravatar` (true) — best-effort free Gravatar existence check, used only to refine confidence on ambiguous (catch-all/unknown) results.
+See deploy/oracle-cloud.md for Ubuntu, PostgreSQL, Gunicorn, the separate worker and reverse-proxy setup. In production:
 
-### Result columns
+1. Set DJANGO_DEBUG=False, a strong DJANGO_SECRET_KEY, correct ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS.
+2. Set SITE_URL to the final HTTPS hostname.
+3. Set DATABASE_URL to the PostgreSQL connection URL and enable database TLS if required.
+4. Run python manage.py migrate and python manage.py collectstatic --noinput.
+5. Run Gunicorn as the web service and python manage.py process_jobs --poll-seconds 2 as one separate worker service.
+6. Configure HTTPS through Nginx or another reverse proxy and secure the media directory and database.
+7. Create the one-time admin account, then remove the setup key and restart the services.
 
-Each row in the output CSV gets: `status` (valid/invalid/risky/unknown), `reason`, `confidence` (0-100), `is_role`, `is_disposable`, `is_free`, `is_catch_all`, `did_you_mean` (typo suggestion), `mx_host`, `provider`, `smtp_message`, `has_spf`, `has_dmarc`, `has_gravatar`, `reliable`.
+For this app the term “Oracle Cloud database” refers to a database reachable from the Oracle Cloud VM. PostgreSQL is the configured production database backend. If you specifically use Oracle Database (the Oracle SQL database product), a separate Oracle database driver and settings configuration are needed.
 
-`unknown` means the mailbox could not be confirmed either way (SMTP unreachable, blocked, or still ambiguous after retry) — treat it as "needs review," not as invalid. `risky` means the domain accepts all mail (catch-all) or is a provider known to accept-then-bounce (e.g. Yahoo/AOL), so a 250 response there isn't trustworthy on its own.
+## Batch-size and verification notes
 
----
+- Current upload cap: 50 MB per file.
+- Current row cap: 100,000 leads per batch.
+- Test 100–200 rows first, then gradually increase the batch size.
+- Speed depends on DNS, provider throttling, catch-all behavior, SMTP availability and network policy.
+- Most residential networks and some cloud providers block outbound SMTP port 25. When live SMTP checks are not possible, the engine reports unconfirmed addresses as Unknown instead of guessing.
+- A Valid result is not a guarantee of delivery; providers can change behavior at any time.
+- The background worker should run as a single process for this starter version.
 
+## Original engine and license status
+
+The original verifier package and standalone Flask/HTML files have been retained in the repository so the verification logic is not discarded. The Django app is the primary website and does not depend on the old Flask API running on port 5050. Review NOTICE.md before redistribution: the initial imported source listing did not contain an upstream LICENSE file, so no upstream license has been assumed.

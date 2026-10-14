@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Workspace | ProveMails{% endblock %}
+{% block meta_description %}Private ProveMails verification workspace and lead processing history.{% endblock %}
+{% block content %}
+<section class="workspace-shell">
+  <div class="workspace-heading"><div><div class="eyebrow"><span class="eyebrow-dot"></span> PRIVATE WORKSPACE</div><h1>Good to see you, <span>{{ request.user.first_name|default:"Admin" }}.</span></h1><p>Upload your lead list and let ProveMails organize the verification results.</p></div><a href="{% url 'control_dashboard' %}" class="button button-secondary">Admin panel <span>↗</span></a></div>
+  <div class="metric-grid">
+    <article class="metric-card"><span class="metric-label">TOTAL JOBS</span><strong>{{ totals.jobs }}</strong><small>Verification batches</small><span class="metric-icon blue">▤</span></article>
+    <article class="metric-card"><span class="metric-label">ROWS PROCESSED</span><strong>{{ totals.verified }}</strong><small>Results across your jobs</small><span class="metric-icon mint">✓</span></article>
+    <article class="metric-card"><span class="metric-label">VALID ADDRESSES</span><strong>{{ totals.valid }}</strong><small>Classified as valid</small><span class="metric-icon green">↗</span></article>
+    <article class="metric-card"><span class="metric-label">NEEDS REVIEW</span><strong>{{ totals.needs_review }}</strong><small>Risky or unconfirmed</small><span class="metric-icon amber">!</span></article>
+  </div>
+
+  <div class="workspace-grid">
+    <section class="panel upload-panel">
+      <div class="panel-heading"><div><span class="panel-kicker">NEW BATCH</span><h2>Upload lead file</h2><p>Start with CSV or Excel (.xlsx), up to 50 MB per file.</p></div><span class="round-icon">↑</span></div>
+      <form method="post" action="{% url 'create_job' %}" enctype="multipart/form-data" data-upload-form>
+        {% csrf_token %}
+        <label for="lead-file" class="drop-area" data-drop-area>
+          <span class="upload-cloud">⇧</span><strong>Drop your file here</strong><span>or <u>browse your computer</u></span><small>CSV or XLSX · maximum 50 MB</small>
+          <span class="selected-file" data-file-name>No file selected</span>
+        </label>
+        <input id="lead-file" name="lead_file" type="file" accept=".csv,.xlsx" required hidden data-file-input>
+        <div class="upload-privacy"><span>♢</span> Original columns are preserved in the downloadable results.</div>
+        <button type="submit" class="button button-primary button-full" data-upload-submit>Queue verification <span>→</span></button>
+      </form>
+    </section>
+    <section class="panel how-panel">
+      <div class="panel-heading"><div><span class="panel-kicker">HOW IT WORKS</span><h2>Simple, transparent checks</h2><p>Every category has a reason to help you decide what to do next.</p></div></div>
+      <div class="how-list"><div><span class="status-dot dot-valid"></span><section><strong>Valid</strong><p>Available verification signals support the address.</p></section></div><div><span class="status-dot dot-risky"></span><section><strong>Risky</strong><p>Catch-all or provider behavior makes the result uncertain.</p></section></div><div><span class="status-dot dot-unknown"></span><section><strong>Unknown</strong><p>The mailbox could not be confirmed either way.</p></section></div><div><span class="status-dot dot-invalid"></span><section><strong>Invalid</strong><p>Syntax, domain or mailbox signals failed checks.</p></section></div></div>
+      <div class="subtle-callout"><strong>Good to know</strong><span>SMTP access varies by network. Use Unknown for review rather than treating every unconfirmed mailbox as invalid.</span></div>
+    </section>
+  </div>
+
+  <section class="panel history-panel">
+    <div class="panel-heading history-heading"><div><span class="panel-kicker">YOUR ACTIVITY</span><h2>Recent verification jobs</h2><p>Resume a job view, check its status or download the finished results.</p></div><span class="count-pill">{{ jobs|length }} recent</span></div>
+    {% if jobs %}
+      <div class="table-scroll"><table class="data-table"><thead><tr><th>File</th><th>Status</th><th>Rows</th><th>Valid</th><th>Created</th><th></th></tr></thead><tbody>
+      {% for job in jobs %}<tr><td><a class="table-primary-link" href="{% url 'job_detail' job.id %}">{{ job.source_filename }}</a><small class="table-subtitle">{{ job.id|truncatechars:15 }}</small></td><td><span class="status-pill status-{{ job.status }}">{{ job.get_status_display }}</span></td><td>{{ job.total|default:"—" }}</td><td>{{ job.valid_count }}</td><td>{{ job.created_at|date:"M j, Y H:i" }}</td><td><a class="text-link" href="{% url 'job_detail' job.id %}">Open →</a></td></tr>{% endfor %}
+      </tbody></table></div>
+    {% else %}
+      <div class="empty-state"><span class="empty-icon">▤</span><h3>Your first batch starts here</h3><p>Upload a small test file to see progress and result categories in action.</p></div>
+    {% endif %}
+  </section>
+</section>
+{% endblock %}
